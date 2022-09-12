@@ -1,45 +1,71 @@
-import numpy
-import cv2
-import imutils
+from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.python.keras.models import Sequential
+from tensorflow.python.keras.layers import Conv2D, MaxPooling2D
+from tensorflow.python.keras.layers import Activation, Dropout, Flatten, Dense
+# Каталог с данными для обучения
+train_dir = 'train'
+# Каталог с данными для проверки
+val_dir = 'val'
+# Каталог с данными для тестирования
+test_dir = 'test'
+# Размеры изображения
+img_width, img_height = 150, 150
+# Размерность тензора на основе изображения для входных данных в нейронную сеть
+# backend Tensorflow, channels_last
+input_shape = (img_width, img_height, 3)
+# Количество эпох
+epochs = 30
+# Размер мини-выборки
+batch_size = 16
+# Количество изображений для обучения
+nb_train_samples = 17500
+# Количество изображений для проверки
+nb_validation_samples = 3750
+# Количество изображений для тестирования
+nb_test_samples = 3750
+model = Sequential()
+model.add(Conv2D(32, (3, 3), input_shape=input_shape))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
 
-image = cv2.imread('123.bmp')
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-gray = cv2.GaussianBlur(gray,(3, 3), 0)
+model.add(Conv2D(32, (3, 3)))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
 
-edges = cv2.Canny(gray, 10, 250)
-cv2.imwrite("edges.jpg", edges)
+model.add(Conv2D(64, (3, 3)))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
 
-kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
-closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
-cv2.imwrite("closed.jpg", closed)
-
-cnts = cv2.findContours(closed.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-cnts = imutils.grab_contours(cnts)
-
-
-total = 0
-wall = 0
-door_wall = 0
-window_wall = 0
-
-for c in cnts:
-    p = cv2.arcLength(c, True)
-    approx = cv2.approxPolyDP(c, 0.02 * p, True)
-    if len(approx) == 4:
-        cv2.drawContours(image, [approx], -1, (0, 0, 255), 4)
-        total += 1
-        wall +=1
-    if len(approx) == 7:
-        cv2.drawContours(image, [approx], -1, (0, 255, 0), 4)
-        total += 1
-        door_wall +=1
-    if len(approx) == 8:
-        cv2.drawContours(image, [approx], -1, (255, 0, 0), 4)
-        total += 1
-        window_wall +=1
-
-print('total = ', total)
-print('wall(red) = ', wall)
-print('door_wall(green) = ', door_wall)
-print('window_wall(blue) = ', window_wall)
-cv2.imwrite("test_final.jpg", image)
+model.add(Flatten())
+model.add(Dense(64))
+model.add(Activation('relu'))
+model.add(Dropout(0.5))
+model.add(Dense(1))
+model.add(Activation('sigmoid'))
+model.compile(loss='binary_crossentropy',
+              optimizer='adam',
+              metrics=['accuracy'])
+datagen = ImageDataGenerator(rescale=1. / 255)
+train_generator = datagen.flow_from_directory(
+    train_dir,
+    target_size=(img_width, img_height),
+    batch_size=batch_size,
+    class_mode='binary')
+val_generator = datagen.flow_from_directory(
+    val_dir,
+    target_size=(img_width, img_height),
+    batch_size=batch_size,
+    class_mode='binary')
+test_generator = datagen.flow_from_directory(
+    test_dir,
+    target_size=(img_width, img_height),
+    batch_size=batch_size,
+    class_mode='binary')
+model.fit_generator(
+    train_generator,
+    steps_per_epoch=nb_train_samples // batch_size,
+    epochs=epochs,
+    validation_data=val_generator,
+    validation_steps=nb_validation_samples // batch_size)
+scores = model.evaluate_generator(test_generator, nb_test_samples // batch_size)
+print("Аккуратность на тестовых данных: %.2f%%" % (scores[1]*100))
