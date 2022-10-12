@@ -4,12 +4,13 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers import Activation, Dropout, Flatten, Dense
+from keras.callbacks import ModelCheckpoint
 # Каталог с данными для обучения
-train_dir = 'images/for NN/train'
+train_dir = 'images/for_NN/train'
 # Каталог с данными для проверки
-val_dir = 'images/for NN/val'
+val_dir = 'images/for_NN/val'
 # Каталог с данными для тестирования
-test_dir = 'images/for NN/test'
+test_dir = 'images/for_NN/test'
 # Размеры изображения
 img_width, img_height = 150, 150
 # Размерность тензора на основе изображения для входных данных в нейронную сеть
@@ -63,11 +64,15 @@ test_generator = datagen.flow_from_directory(
     target_size=(img_width, img_height),
     batch_size=batch_size,
     class_mode='categorical')
+
+callbacks = [ModelCheckpoint('saved_models/contour_dense.hdf5', monitor='val_loss', save_best_only=True)]
+
 model.fit(
     train_generator,
     steps_per_epoch=nb_train_samples // batch_size,
     epochs=epochs,
     validation_data=val_generator,
-    validation_steps=nb_validation_samples // batch_size)
-scores = model.evaluate_generator(test_generator, nb_test_samples // batch_size)
+    validation_steps=nb_validation_samples // batch_size,
+    callbacks=callbacks)
+scores = model.evaluate(test_generator, nb_test_samples // batch_size)
 print("Аккуратность на тестовых данных: %.2f%%" % (scores[1]*100))
