@@ -1,24 +1,34 @@
 
-
 ####################################################################
 # Перед началом, убедитесь, что все библиотеки установлены/обновлены
 # В окне проекта обязательно должна быть папка images с 5 папками(for_NN, input, output, test_output, sours_blank)
 # В окне проекта обязательно должен лежать исходный вайл в пути images/input/input.bmp
 # В окне проекта обязательно должны лежать пустышки в пути images/sours_blank/   wall, window, door и т.д.
+#
+# P.s. Починить часть с использованием нейросети, а то она мне жопу откусила
 ####################################################################
 
 import cv2
 import imutils
 import random
+from tensorflow.python.keras.models import load_model
+import numpy as np
+from keras.utils import np_utils
+from keras.utils import load_img
+from keras.utils import img_to_array
+import os
+from PIL import Image
 
+# загрузка обученой нейросети
+model = load_model('saved_models/contour_dense.hdf5')
 # чтение изображения для работы(input)
-image = cv2.imread('images/input/input.bmp')
+image1 = cv2.imread('images/input/input.bmp')
 # чтение вспомогательных изображений(sours_blank)
 wall_mask = cv2.imread('images/sours_blank/wall.bmp')
 door_wall_mask = cv2.imread('images/sours_blank/door.bmp')
 window_wall_mask = cv2.imread('images/sours_blank/window.bmp')
 # подготовка изображения для работы
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+gray = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
 gray = cv2.GaussianBlur(gray, (3, 3), 0)
 
 edges = cv2.Canny(gray, 10, 250)
@@ -52,83 +62,83 @@ for c in cnts:
     p = cv2.arcLength(c, True)
     approx = cv2.approxPolyDP(c, 0.02 * p, True)
     if len(approx) == 4:
-        cv2.drawContours(image, [approx], -1, (0, 0, 255), 4)
+        cv2.drawContours(image1, [approx], -1, (0, 0, 255), 4)
         total += 1
         wall += 1
     if len(approx) == 7:
-        cv2.drawContours(image, [approx], -1, (0, 255, 0), 4)
+        cv2.drawContours(image1, [approx], -1, (0, 255, 0), 4)
         total += 1
         door_wall += 1
     if len(approx) == 8:
-        cv2.drawContours(image, [approx], -1, (255, 0, 0), 4)
+        cv2.drawContours(image1, [approx], -1, (255, 0, 0), 4)
         total += 1
         window_wall += 1
 
-# генерация для обучения(train)
-while n < 875:
-    for c in cnts:
-        p = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.02 * p, True)
-        if len(approx) == 4:
-            cv2.drawContours(wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
-            cv2.imwrite("images/for_NN/train/wall/wall" + str(nwall) + ".jpg", wall_mask)
-            wall_mask = cv2.imread('images/sours_blank/wall.bmp')
-            nwall += 1
-        if len(approx) == 7:
-            cv2.drawContours(door_wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
-            cv2.imwrite("images/for_NN/train/door/door" + str(ndoor_wall) + ".jpg", door_wall_mask)
-            door_wall_mask = cv2.imread('images/sours_blank/door.bmp')
-            ndoor_wall += 1
-        if len(approx) == 8:
-            cv2.drawContours(window_wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
-            cv2.imwrite("images/for_NN/train/window/window" + str(nwindow_wall) + ".jpg", window_wall_mask)
-            window_wall_mask = cv2.imread('images/sours_blank/window.bmp')
-            nwindow_wall += 1
-    n += 1
-
-# генерация для проверки(val)
-while t1 < 188:
-    for c in cnts:
-        p = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.02 * p, True)
-        if len(approx) == 4:
-            cv2.drawContours(wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
-            cv2.imwrite("images/for_NN/val/wall/wall" + str(nwall) + ".jpg", wall_mask)
-            wall_mask = cv2.imread('images/sours_blank/wall.bmp')
-            nwall += 1
-        if len(approx) == 7:
-            cv2.drawContours(door_wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
-            cv2.imwrite("images/for_NN/val/door/door" + str(ndoor_wall) + ".jpg", door_wall_mask)
-            door_wall_mask = cv2.imread('images/sours_blank/door.bmp')
-            ndoor_wall += 1
-        if len(approx) == 8:
-            cv2.drawContours(window_wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
-            cv2.imwrite("images/for_NN/val/window/window" + str(nwindow_wall) + ".jpg", window_wall_mask)
-            window_wall_mask = cv2.imread('images/sours_blank/window.bmp')
-            nwindow_wall += 1
-    t1 += 1
-
-# генерация для тестов(test)
-while t2 < 188:
-    for c in cnts:
-        p = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.02 * p, True)
-        if len(approx) == 4:
-            cv2.drawContours(wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
-            cv2.imwrite("images/for_NN/test/wall/wall" + str(nwall) + ".jpg", wall_mask)
-            wall_mask = cv2.imread('images/sours_blank/wall.bmp')
-            nwall += 1
-        if len(approx) == 7:
-            cv2.drawContours(door_wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
-            cv2.imwrite("images/for_NN/test/door/door" + str(ndoor_wall) + ".jpg", door_wall_mask)
-            door_wall_mask = cv2.imread('images/sours_blank/door.bmp')
-            ndoor_wall += 1
-        if len(approx) == 8:
-            cv2.drawContours(window_wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
-            cv2.imwrite("images/for_NN/test/window/window" + str(nwindow_wall) + ".jpg", window_wall_mask)
-            window_wall_mask = cv2.imread('images/sours_blank/window.bmp')
-            nwindow_wall += 1
-    t2 += 1
+# # генерация для обучения(train)
+# while n < 875:
+#     for c in cnts:
+#         p = cv2.arcLength(c, True)
+#         approx = cv2.approxPolyDP(c, 0.02 * p, True)
+#         if len(approx) == 4:
+#             cv2.drawContours(wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
+#             cv2.imwrite("images/for_NN/train/wall/wall" + str(nwall) + ".jpg", wall_mask)
+#             wall_mask = cv2.imread('images/sours_blank/wall.bmp')
+#             nwall += 1
+#         if len(approx) == 7:
+#             cv2.drawContours(door_wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
+#             cv2.imwrite("images/for_NN/train/door/door" + str(ndoor_wall) + ".jpg", door_wall_mask)
+#             door_wall_mask = cv2.imread('images/sours_blank/door.bmp')
+#             ndoor_wall += 1
+#         if len(approx) == 8:
+#             cv2.drawContours(window_wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
+#             cv2.imwrite("images/for_NN/train/window/window" + str(nwindow_wall) + ".jpg", window_wall_mask)
+#             window_wall_mask = cv2.imread('images/sours_blank/window.bmp')
+#             nwindow_wall += 1
+#     n += 1
+#
+# # генерация для проверки(val)
+# while t1 < 188:
+#     for c in cnts:
+#         p = cv2.arcLength(c, True)
+#         approx = cv2.approxPolyDP(c, 0.02 * p, True)
+#         if len(approx) == 4:
+#             cv2.drawContours(wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
+#             cv2.imwrite("images/for_NN/val/wall/wall" + str(nwall) + ".jpg", wall_mask)
+#             wall_mask = cv2.imread('images/sours_blank/wall.bmp')
+#             nwall += 1
+#         if len(approx) == 7:
+#             cv2.drawContours(door_wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
+#             cv2.imwrite("images/for_NN/val/door/door" + str(ndoor_wall) + ".jpg", door_wall_mask)
+#             door_wall_mask = cv2.imread('images/sours_blank/door.bmp')
+#             ndoor_wall += 1
+#         if len(approx) == 8:
+#             cv2.drawContours(window_wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
+#             cv2.imwrite("images/for_NN/val/window/window" + str(nwindow_wall) + ".jpg", window_wall_mask)
+#             window_wall_mask = cv2.imread('images/sours_blank/window.bmp')
+#             nwindow_wall += 1
+#     t1 += 1
+#
+# # генерация для тестов(test)
+# while t2 < 188:
+#     for c in cnts:
+#         p = cv2.arcLength(c, True)
+#         approx = cv2.approxPolyDP(c, 0.02 * p, True)
+#         if len(approx) == 4:
+#             cv2.drawContours(wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
+#             cv2.imwrite("images/for_NN/test/wall/wall" + str(nwall) + ".jpg", wall_mask)
+#             wall_mask = cv2.imread('images/sours_blank/wall.bmp')
+#             nwall += 1
+#         if len(approx) == 7:
+#             cv2.drawContours(door_wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
+#             cv2.imwrite("images/for_NN/test/door/door" + str(ndoor_wall) + ".jpg", door_wall_mask)
+#             door_wall_mask = cv2.imread('images/sours_blank/door.bmp')
+#             ndoor_wall += 1
+#         if len(approx) == 8:
+#             cv2.drawContours(window_wall_mask, [approx], -1, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 4)
+#             cv2.imwrite("images/for_NN/test/window/window" + str(nwindow_wall) + ".jpg", window_wall_mask)
+#             window_wall_mask = cv2.imread('images/sours_blank/window.bmp')
+#             nwindow_wall += 1
+#     t2 += 1
 
 # выходные значения(output)
 for c in cnts:
@@ -150,10 +160,40 @@ for c in cnts:
         window_wall_mask = cv2.imread('images/sours_blank/window.bmp')
         number_element += 1
 
+# преобразование элементов под размер нейросети(150, 150)
+resize_x_to_min = 150
+resize_y_to_min = 150
+directory = 'images/output/'
+with os.scandir(path=directory) as it:
+    for entry in it:
+        img_obj = Image.open(directory + entry.name)
+        width_size = height_size = 0
+        delta = resize_x_to_min / float(img_obj.size[0])
+        width_size = int(float(img_obj.size[0]) * delta)
+        height_size = int(float(img_obj.size[1]) * delta)
+        delta = resize_y_to_min / float(img_obj.size[1])
+        width_size = int(float(img_obj.size[0]) * delta)
+        height_size = int(float(img_obj.size[1]) * delta)
+        img_obj = img_obj.resize((width_size, height_size), Image.ANTIALIAS)
+        img_obj.save(directory + entry.name)
+
+# компиляция нейросети. перобразование элементов. вывод
+model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+img_path = 'images/output/elements0.jpg'
+img = load_img(img_path, target_size=(150, 150), grayscale=True)
+
+x = img_to_array(img)
+x = x / 255
+x = np.expand_dims(x, axis=0)
+
+prediction = model.predict(x)
+prediction = np_utils.categorical_probas_to_classes(prediction)
+print(prediction)
+
 # проверка для консоли
 print('total = ', total)
 print('wall(red) = ', wall)
 print('door_wall(green) = ', door_wall)
 print('window_wall(blue) = ', window_wall)
 # вывод для проверки(test_output)
-cv2.imwrite("images/test_output/test_final.jpg", image)
+cv2.imwrite("images/test_output/test_final.jpg", image1)
