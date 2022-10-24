@@ -15,6 +15,7 @@ import numpy as np
 from keras.models import load_model
 from keras.utils import load_img
 from keras.utils import img_to_array
+import json
 
 # загрузка обученой нейросети
 loaded_model = load_model('saved_models/contour_dense.hdf5')
@@ -153,6 +154,17 @@ for c in cnts:
 #             nwindow_wall += 1
 #     t2 += 1
 
+
+data = {}
+data['element'] = []
+
+
+resize_x_to_min = 150
+resize_y_to_min = 150
+
+directory = 'images/output/'
+
+pos = None
 # выходные значения(output)
 for c in cnts:
     p = cv2.arcLength(c, True)
@@ -161,7 +173,75 @@ for c in cnts:
         cv2.drawContours(wall_mask, [approx], -1, (0, 0, 0), 4)
         cv2.imwrite("images/output/elements" + str(number_element) + ".jpg", wall_mask)
         wall_mask = cv2.imread('images/sours_blank/wall.bmp')
+
+        pos = approx
+        pos1 = pos[0]
+        pos11 = pos1[0]
+        x1 = pos11[0]
+        y1 = pos11[1]
+
+        pos2 = pos[1]
+        pos21 = pos2[0]
+        x2 = pos21[0]
+        y2 = pos21[1]
+
+        pos3 = pos[2]
+        pos31 = pos3[0]
+        x3 = pos31[0]
+        y3 = pos31[1]
+
+        pos4 = pos[3]
+        pos41 = pos4[0]
+        x4 = pos41[0]
+        y4 = pos41[1]
+
+        if((y2-y1)>(x3-x2)):
+            length = y2-y1
+            width = x3-x2
+        else:
+            length = x3 - x2
+            width = y2-y1
+
+        with os.scandir(path=directory) as it:
+            for entry in it:
+                img_obj = Image.open(directory + entry.name)
+                width_size = height_size = 0
+                delta = resize_x_to_min / float(img_obj.size[0])
+                width_size = int(float(img_obj.size[0]) * delta)
+                height_size = int(float(img_obj.size[1]) * delta)
+                delta = resize_y_to_min / float(img_obj.size[1])
+                width_size = int(float(img_obj.size[0]) * delta)
+                height_size = int(float(img_obj.size[1]) * delta)
+                img_obj = img_obj.resize((width_size, height_size), Image.ANTIALIAS)
+                img_obj.save(directory + entry.name)
+
+        img_path = 'images/output/elements' + str(number_element) + '.jpg'
+        img = load_img(img_path, target_size=(150, 150))
+
+        y = img_to_array(img)
+        y = y / 255
+        y = np.expand_dims(y, axis=0)
+
+        prediction = loaded_model.predict(y)
+
+        for value in range(len(prediction)):
+            prediction = prediction[value]
+
+        prediction = np.argmax(prediction)
+        print(d[prediction])
+
+        #
+
+        data['element'].append({
+            'class': d[prediction],
+            'X': x1,
+            'Y': y1,
+            'length': length,
+            'width': width,
+        })
+
         number_element += 1
+
     if len(approx) == 7:
         cv2.drawContours(door_wall_mask, [approx], -1, (0, 0, 0), 4)
         cv2.imwrite("images/output/elements" + str(number_element) + ".jpg", door_wall_mask)
@@ -173,41 +253,20 @@ for c in cnts:
         window_wall_mask = cv2.imread('images/sours_blank/window.bmp')
         number_element += 1
 
-# преобразование элементов под размер нейросети(150, 150)
-resize_x_to_min = 150
-resize_y_to_min = 150
-directory = 'images/output/'
-with os.scandir(path=directory) as it:
-    for entry in it:
-        img_obj = Image.open(directory + entry.name)
-        width_size = height_size = 0
-        delta = resize_x_to_min / float(img_obj.size[0])
-        width_size = int(float(img_obj.size[0]) * delta)
-        height_size = int(float(img_obj.size[1]) * delta)
-        delta = resize_y_to_min / float(img_obj.size[1])
-        width_size = int(float(img_obj.size[0]) * delta)
-        height_size = int(float(img_obj.size[1]) * delta)
-        img_obj = img_obj.resize((width_size, height_size), Image.ANTIALIAS)
-        img_obj.save(directory + entry.name)
 
-# классификация
-while numb < number_element:
-    img_path = 'images/output/elements' + str(numb) + '.jpg'
-    img = load_img(img_path, target_size=(150, 150))
-
-    y = img_to_array(img)
-    y = y / 255
-    y = np.expand_dims(y, axis=0)
-
-    prediction = loaded_model.predict(y)
-
-    for value in range(len(prediction)):
-        prediction = prediction[value]
-
-    prediction = np.argmax(prediction)
-    print(d[prediction])
-    numb +=1
-
+with open('data.txt', 'w') as outfile:
+    json.dump(data, outfile)
+print(pos)
+print(pos1)
+print(pos11)
+print(x1)
+print(y1)
+print(x2)
+print(y2)
+print(x3)
+print(y3)
+print(x4)
+print(y4)
 # проверка для консоли
 print('total = ', total)
 print('wall(red) = ', wall)
