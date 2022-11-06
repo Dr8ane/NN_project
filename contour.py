@@ -25,7 +25,18 @@ def write(data, filename):
 def read(filename):
     with open(filename, 'r', encoding = 'utf-8') as file:
         return json.load(file)
+class Element:
+    def __init__(self):
+        self.Class = _class
+        self.X = _x
+        self.Y = _y
+        self.Length = length
+        self.Width = width
+        self.Rotation = _r
 
+data = {
+    "elements" : []
+}
 # чтение изображения для работы(input)
 image1 = cv2.imread('images/input/input.bmp')
 # чтение вспомогательных изображений(sours_blank)
@@ -50,6 +61,7 @@ cnts = imutils.grab_contours(cnts)
 n = 0
 t1 = 0
 t2 = 0
+_r = None
 # конст для выходных значений
 number_element = 0
 
@@ -58,25 +70,13 @@ resize_y_to_min = 150
 
 directory = 'images/output/'
 
-class Element:
-    def __init__(self):
-        self.Class = _class
-        self.X = _x
-        self.Y = _y
-        self.Length = length
-        self.Width = width
-
-data = {
-    "elements" : []
-}
-
 pos = None
 # выходные значения(output)
 for c in cnts:
     p = cv2.arcLength(c, True)
     approx = cv2.approxPolyDP(c, 0.02 * p, True)
     if len(approx) == 4:
-        cv2.drawContours(wall_mask, [approx], -1, (0, 0, 0), 4)
+        cv2.drawContours(wall_mask, [approx], -1, (0, 0, 0), 0)
         cv2.imwrite("images/output/elements" + str(number_element) + ".jpg", wall_mask)
         wall_mask = cv2.imread('images/sours_blank/wall.bmp')
 
@@ -123,11 +123,13 @@ for c in cnts:
             width = max_x - min_x
             _x = max_x - width / 2
             _y = max_y - length / 2
+            _r = 0
         else:
             length = max_x - min_x
             width = max_y - min_y
             _x = max_x - length / 2
             _y = max_y - width / 2
+            _r = 1
 
 
         with os.scandir(path=directory) as it:
@@ -164,7 +166,7 @@ for c in cnts:
         number_element += 1
 
     if len(approx) == 7:
-        cv2.drawContours(door_wall_mask, [approx], -1, (0, 0, 0), 4)
+        cv2.drawContours(door_wall_mask, [approx], -1, (0, 0, 0), 0)
         cv2.imwrite("images/output/elements" + str(number_element) + ".jpg", door_wall_mask)
         door_wall_mask = cv2.imread('images/sours_blank/door.bmp')
         pos = approx
@@ -231,11 +233,13 @@ for c in cnts:
             width = max_x - min_x
             _x = max_x - width/2
             _y = max_y - length/2
+            _r = 0
         else:
             length = max_x - min_x
             width = max_y - min_y
             _x = max_x - length / 2
             _y = max_y - width / 2
+            _r = 1
 
 
         with os.scandir(path=directory) as it:
@@ -271,7 +275,7 @@ for c in cnts:
 
         number_element += 1
     if len(approx) == 8:
-        cv2.drawContours(window_wall_mask, [approx], -1, (0, 0, 0), 4)
+        cv2.drawContours(window_wall_mask, [approx], -1, (0, 0, 0), 0)
         cv2.imwrite("images/output/elements" + str(number_element) + ".jpg", window_wall_mask)
         window_wall_mask = cv2.imread('images/sours_blank/window.bmp')
         pos = approx
@@ -345,11 +349,13 @@ for c in cnts:
             width = max_x - min_x
             _x = max_x - width / 2
             _y = max_y - length / 2
+            _r = 0
         else:
             length = max_x - min_x
             width = max_y - min_y
             _x = max_x - length / 2
             _y = max_y - width / 2
+            _r = 1
 
         with os.scandir(path=directory) as it:
             for entry in it:
