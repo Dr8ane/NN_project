@@ -12,18 +12,22 @@ import random
 import os
 from PIL import Image
 import numpy as np
-from keras.models import load_model
-from keras.utils import load_img
-from keras.utils import img_to_array
+# from keras.models import load_model
+# from keras.utils import load_img
+# from keras.utils import img_to_array
 import json
 
-# загрузка обученой нейросети
-loaded_model = load_model('saved_models/contour_dense.hdf5')
+#
 
-# компиляция нейросети
-loaded_model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+def write(data, filename):
+    data = json.dumps(data)
+    data = json.loads(str(data))
+    with open(filename, 'w', encoding = 'utf-8') as file:
+        json.dump(data, file, indent = 4)
 
-d = {0: 'дверь', 1: 'стена', 2: 'окно'}
+def read(filename):
+    with open(filename, 'r', encoding = 'utf-8') as file:
+        return json.load(file)
 
 # чтение изображения для работы(input)
 image1 = cv2.imread('images/input/input.bmp')
@@ -67,15 +71,15 @@ for c in cnts:
     p = cv2.arcLength(c, True)
     approx = cv2.approxPolyDP(c, 0.02 * p, True)
     if len(approx) == 4:
-        cv2.drawContours(image1, [approx], -1, (0, 0, 255), 4)
+        cv2.drawContours(image1, [approx], -1, (0, 0, 255), 0)
         total += 1
         wall += 1
     if len(approx) == 7:
-        cv2.drawContours(image1, [approx], -1, (0, 255, 0), 4)
+        cv2.drawContours(image1, [approx], -1, (0, 255, 0), 0)
         total += 1
         door_wall += 1
     if len(approx) == 8:
-        cv2.drawContours(image1, [approx], -1, (255, 0, 0), 4)
+        cv2.drawContours(image1, [approx], -1, (255, 0, 0), 0)
         total += 1
         window_wall += 1
 
@@ -154,124 +158,352 @@ for c in cnts:
 #             nwindow_wall += 1
 #     t2 += 1
 
+# resize_x_to_min = 150
+# resize_y_to_min = 150
+#
+# directory = 'images/output/'
+#
+# class Element:
+#     def __init__(self):
+#         self.Class = _class
+#         self.X = _x
+#         self.Y = _y
+#         self.Length = length
+#         self.Width = width
+#
+# data = {
+#     "elements" : []
+# }
 
-data = {}
-data['element'] = []
+# pos = None
+# # выходные значения(output)
+# for c in cnts:
+#     p = cv2.arcLength(c, True)
+#     approx = cv2.approxPolyDP(c, 0.02 * p, True)
+#     if len(approx) == 4:
+#         cv2.drawContours(wall_mask, [approx], -1, (0, 0, 0), 4)
+#         cv2.imwrite("images/output/elements" + str(number_element) + ".jpg", wall_mask)
+#         wall_mask = cv2.imread('images/sours_blank/wall.bmp')
+#
+#         pos = approx
+#         pos1 = pos[0]
+#         pos11 = pos1[0]
+#         x11 = pos11[0]
+#         y11 = pos11[1]
+#         x1 = int(x11)
+#         y1 = int(y11)
+#
+#         pos2 = pos[1]
+#         pos21 = pos2[0]
+#         x21 = pos21[0]
+#         y21 = pos21[1]
+#         x2 = int(x21)
+#         y2 = int(y21)
+#
+#         pos3 = pos[2]
+#         pos31 = pos3[0]
+#         x31 = pos31[0]
+#         y31 = pos31[1]
+#         x3 = int(x31)
+#         y3 = int(y31)
+#
+#         pos4 = pos[3]
+#         pos41 = pos4[0]
+#         x41 = pos41[0]
+#         y41 = pos41[1]
+#         x4 = int(x41)
+#         y4 = int(y41)
+#
+#         list_x = [x1, x2, x3, x4]
+#         list_y = [y1, y2, y3, y4]
+#
+#         max_x = max(list_x)
+#         min_x = min(list_x)
+#
+#         max_y = max(list_y)
+#         min_y = min(list_y)
+#
+#         if ((max_y - min_y) > (max_x - min_x)):
+#             length = max_y - min_y
+#             width = max_x - min_x
+#             _x = max_x - width / 2
+#             _y = max_y - length / 2
+#         else:
+#             length = max_x - min_x
+#             width = max_y - min_y
+#             _x = max_x - length / 2
+#             _y = max_y - width / 2
+#
+#
+#         with os.scandir(path=directory) as it:
+#             for entry in it:
+#                 img_obj = Image.open(directory + entry.name)
+#                 width_size = height_size = 0
+#                 delta = resize_x_to_min / float(img_obj.size[0])
+#                 width_size = int(float(img_obj.size[0]) * delta)
+#                 height_size = int(float(img_obj.size[1]) * delta)
+#                 delta = resize_y_to_min / float(img_obj.size[1])
+#                 width_size = int(float(img_obj.size[0]) * delta)
+#                 height_size = int(float(img_obj.size[1]) * delta)
+#                 img_obj = img_obj.resize((width_size, height_size), Image.ANTIALIAS)
+#                 img_obj.save(directory + entry.name)
+#
+#         img_path = 'images/output/elements' + str(number_element) + '.jpg'
+#         img = load_img(img_path, target_size=(150, 150))
+#
+#         y = img_to_array(img)
+#         y = y / 255
+#         y = np.expand_dims(y, axis=0)
+#
+#         prediction = loaded_model.predict(y)
+#
+#         for value in range(len(prediction)):
+#             prediction = prediction[value]
+#
+#         prediction = np.argmax(prediction)
+#
+#         _class = d[prediction]
+#
+#         data['elements'].append(Element().__dict__)
+#
+#         number_element += 1
+#
+#     if len(approx) == 7:
+#         cv2.drawContours(door_wall_mask, [approx], -1, (0, 0, 0), 4)
+#         cv2.imwrite("images/output/elements" + str(number_element) + ".jpg", door_wall_mask)
+#         door_wall_mask = cv2.imread('images/sours_blank/door.bmp')
+#         pos = approx
+#         pos1 = pos[0]
+#         pos11 = pos1[0]
+#         x11 = pos11[0]
+#         y11 = pos11[1]
+#         x1 = int(x11)
+#         y1 = int(y11)
+#
+#         pos2 = pos[1]
+#         pos21 = pos2[0]
+#         x21 = pos21[0]
+#         y21 = pos21[1]
+#         x2 = int(x21)
+#         y2 = int(y21)
+#
+#         pos3 = pos[2]
+#         pos31 = pos3[0]
+#         x31 = pos31[0]
+#         y31 = pos31[1]
+#         x3 = int(x31)
+#         y3 = int(y31)
+#
+#         pos4 = pos[3]
+#         pos41 = pos4[0]
+#         x41 = pos41[0]
+#         y41 = pos41[1]
+#         x4 = int(x41)
+#         y4 = int(y41)
+#
+#         pos5 = pos[4]
+#         pos51 = pos5[0]
+#         x51 = pos51[0]
+#         y51 = pos51[1]
+#         x5 = int(x51)
+#         y5 = int(y51)
+#
+#         pos6 = pos[5]
+#         pos61 = pos6[0]
+#         x61 = pos61[0]
+#         y61 = pos61[1]
+#         x6 = int(x61)
+#         y6 = int(y61)
+#
+#         pos7 = pos[6]
+#         pos71 = pos7[0]
+#         x71 = pos71[0]
+#         y71 = pos71[1]
+#         x7 = int(x71)
+#         y7 = int(y71)
+#
+#         list_x = [x1, x2, x3, x4, x5, x6, x7]
+#         list_y = [y1, y2, y3, y4, y5, y6, y7]
+#
+#         max_x = max(list_x)
+#         min_x = min(list_x)
+#
+#         max_y = max(list_y)
+#         min_y = min(list_y)
+#
+#         if ((max_y - min_y) > (max_x - min_x)):
+#             length = max_y - min_y
+#             width = max_x - min_x
+#             _x = max_x - width/2
+#             _y = max_y - length/2
+#         else:
+#             length = max_x - min_x
+#             width = max_y - min_y
+#             _x = max_x - length / 2
+#             _y = max_y - width / 2
+#
+#
+#         with os.scandir(path=directory) as it:
+#             for entry in it:
+#                 img_obj = Image.open(directory + entry.name)
+#                 width_size = height_size = 0
+#                 delta = resize_x_to_min / float(img_obj.size[0])
+#                 width_size = int(float(img_obj.size[0]) * delta)
+#                 height_size = int(float(img_obj.size[1]) * delta)
+#                 delta = resize_y_to_min / float(img_obj.size[1])
+#                 width_size = int(float(img_obj.size[0]) * delta)
+#                 height_size = int(float(img_obj.size[1]) * delta)
+#                 img_obj = img_obj.resize((width_size, height_size), Image.ANTIALIAS)
+#                 img_obj.save(directory + entry.name)
+#
+#         img_path = 'images/output/elements' + str(number_element) + '.jpg'
+#         img = load_img(img_path, target_size=(150, 150))
+#
+#         y = img_to_array(img)
+#         y = y / 255
+#         y = np.expand_dims(y, axis=0)
+#
+#         prediction = loaded_model.predict(y)
+#
+#         for value in range(len(prediction)):
+#             prediction = prediction[value]
+#
+#         prediction = np.argmax(prediction)
+#
+#         _class = d[prediction]
+#
+#         data['elements'].append(Element().__dict__)
+#
+#         number_element += 1
+#     if len(approx) == 8:
+#         cv2.drawContours(window_wall_mask, [approx], -1, (0, 0, 0), 4)
+#         cv2.imwrite("images/output/elements" + str(number_element) + ".jpg", window_wall_mask)
+#         window_wall_mask = cv2.imread('images/sours_blank/window.bmp')
+#         pos = approx
+#         pos1 = pos[0]
+#         pos11 = pos1[0]
+#         x11 = pos11[0]
+#         y11 = pos11[1]
+#         x1 = int(x11)
+#         y1 = int(y11)
+#
+#         pos2 = pos[1]
+#         pos21 = pos2[0]
+#         x21 = pos21[0]
+#         y21 = pos21[1]
+#         x2 = int(x21)
+#         y2 = int(y21)
+#
+#         pos3 = pos[2]
+#         pos31 = pos3[0]
+#         x31 = pos31[0]
+#         y31 = pos31[1]
+#         x3 = int(x31)
+#         y3 = int(y31)
+#
+#         pos4 = pos[3]
+#         pos41 = pos4[0]
+#         x41 = pos41[0]
+#         y41 = pos41[1]
+#         x4 = int(x41)
+#         y4 = int(y41)
+#
+#         pos5 = pos[4]
+#         pos51 = pos5[0]
+#         x51 = pos51[0]
+#         y51 = pos51[1]
+#         x5 = int(x51)
+#         y5 = int(y51)
+#
+#         pos6 = pos[5]
+#         pos61 = pos6[0]
+#         x61 = pos61[0]
+#         y61 = pos61[1]
+#         x6 = int(x61)
+#         y6 = int(y61)
+#
+#         pos7 = pos[6]
+#         pos71 = pos7[0]
+#         x71 = pos71[0]
+#         y71 = pos71[1]
+#         x7 = int(x71)
+#         y7 = int(y71)
+#
+#         pos8 = pos[7]
+#         pos81 = pos8[0]
+#         x81 = pos81[0]
+#         y81 = pos81[1]
+#         x8 = int(x81)
+#         y8 = int(y81)
+#
+#         list_x = [x1, x2, x3, x4, x5, x6, x7, x8]
+#         list_y = [y1, y2, y3, y4, y5, y6, y7, y8]
+#
+#         max_x = max(list_x)
+#         min_x = min(list_x)
+#
+#         max_y = max(list_y)
+#         min_y = min(list_y)
+#
+#         if ((max_y - min_y) > (max_x - min_x)):
+#             length = max_y - min_y
+#             width = max_x - min_x
+#             _x = max_x - width / 2
+#             _y = max_y - length / 2
+#         else:
+#             length = max_x - min_x
+#             width = max_y - min_y
+#             _x = max_x - length / 2
+#             _y = max_y - width / 2
+#
+#         with os.scandir(path=directory) as it:
+#             for entry in it:
+#                 img_obj = Image.open(directory + entry.name)
+#                 width_size = height_size = 0
+#                 delta = resize_x_to_min / float(img_obj.size[0])
+#                 width_size = int(float(img_obj.size[0]) * delta)
+#                 height_size = int(float(img_obj.size[1]) * delta)
+#                 delta = resize_y_to_min / float(img_obj.size[1])
+#                 width_size = int(float(img_obj.size[0]) * delta)
+#                 height_size = int(float(img_obj.size[1]) * delta)
+#                 img_obj = img_obj.resize((width_size, height_size), Image.ANTIALIAS)
+#                 img_obj.save(directory + entry.name)
+#
+#         img_path = 'images/output/elements' + str(number_element) + '.jpg'
+#         img = load_img(img_path, target_size=(150, 150))
+#
+#         y = img_to_array(img)
+#         y = y / 255
+#         y = np.expand_dims(y, axis=0)
+#
+#         prediction = loaded_model.predict(y)
+#
+#         for value in range(len(prediction)):
+#             prediction = prediction[value]
+#
+#         prediction = np.argmax(prediction)
+#
+#         _class = d[prediction]
+#
+#         data['elements'].append(Element().__dict__)
+#         number_element += 1
+#
+# # запись в JSON
+# write(data, 'data.json')
 
-
-resize_x_to_min = 150
-resize_y_to_min = 150
-
-directory = 'images/output/'
-
-pos = None
-# выходные значения(output)
-for c in cnts:
-    p = cv2.arcLength(c, True)
-    approx = cv2.approxPolyDP(c, 0.02 * p, True)
-    if len(approx) == 4:
-        cv2.drawContours(wall_mask, [approx], -1, (0, 0, 0), 4)
-        cv2.imwrite("images/output/elements" + str(number_element) + ".jpg", wall_mask)
-        wall_mask = cv2.imread('images/sours_blank/wall.bmp')
-
-        pos = approx
-        pos1 = pos[0]
-        pos11 = pos1[0]
-        x1 = pos11[0]
-        y1 = pos11[1]
-
-        pos2 = pos[1]
-        pos21 = pos2[0]
-        x2 = pos21[0]
-        y2 = pos21[1]
-
-        pos3 = pos[2]
-        pos31 = pos3[0]
-        x3 = pos31[0]
-        y3 = pos31[1]
-
-        pos4 = pos[3]
-        pos41 = pos4[0]
-        x4 = pos41[0]
-        y4 = pos41[1]
-
-        if((y2-y1)>(x3-x2)):
-            length = y2-y1
-            width = x3-x2
-        else:
-            length = x3 - x2
-            width = y2-y1
-
-        with os.scandir(path=directory) as it:
-            for entry in it:
-                img_obj = Image.open(directory + entry.name)
-                width_size = height_size = 0
-                delta = resize_x_to_min / float(img_obj.size[0])
-                width_size = int(float(img_obj.size[0]) * delta)
-                height_size = int(float(img_obj.size[1]) * delta)
-                delta = resize_y_to_min / float(img_obj.size[1])
-                width_size = int(float(img_obj.size[0]) * delta)
-                height_size = int(float(img_obj.size[1]) * delta)
-                img_obj = img_obj.resize((width_size, height_size), Image.ANTIALIAS)
-                img_obj.save(directory + entry.name)
-
-        img_path = 'images/output/elements' + str(number_element) + '.jpg'
-        img = load_img(img_path, target_size=(150, 150))
-
-        y = img_to_array(img)
-        y = y / 255
-        y = np.expand_dims(y, axis=0)
-
-        prediction = loaded_model.predict(y)
-
-        for value in range(len(prediction)):
-            prediction = prediction[value]
-
-        prediction = np.argmax(prediction)
-        print(d[prediction])
-
-        #
-
-        data['element'].append({
-            'class': d[prediction],
-            'X': x1,
-            'Y': y1,
-            'length': length,
-            'width': width,
-        })
-
-        number_element += 1
-
-    if len(approx) == 7:
-        cv2.drawContours(door_wall_mask, [approx], -1, (0, 0, 0), 4)
-        cv2.imwrite("images/output/elements" + str(number_element) + ".jpg", door_wall_mask)
-        door_wall_mask = cv2.imread('images/sours_blank/door.bmp')
-        number_element += 1
-    if len(approx) == 8:
-        cv2.drawContours(window_wall_mask, [approx], -1, (0, 0, 0), 4)
-        cv2.imwrite("images/output/elements" + str(number_element) + ".jpg", window_wall_mask)
-        window_wall_mask = cv2.imread('images/sours_blank/window.bmp')
-        number_element += 1
-
-
-with open('data.txt', 'w') as outfile:
-    json.dump(data, outfile)
-print(pos)
-print(pos1)
-print(pos11)
-print(x1)
-print(y1)
-print(x2)
-print(y2)
-print(x3)
-print(y3)
-print(x4)
-print(y4)
 # проверка для консоли
 print('total = ', total)
 print('wall(red) = ', wall)
 print('door_wall(green) = ', door_wall)
 print('window_wall(blue) = ', window_wall)
-
 # вывод для проверки(test_output)
 cv2.imwrite("images/test_output/test_final.jpg", image1)
+
+# # получение данных из JSON
+# n_data = read('data.json')
+# print(n_data['elements'][0])
+#
+# # получение конкретных данных
+# g = Element()
+# g.name = n_data['elements'][0]['Class']
+# print(g.name)
